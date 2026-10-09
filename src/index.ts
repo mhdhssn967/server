@@ -16,16 +16,10 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 3001;
 
-// Existing types/state
-type PlayerState = { x: number; y: number; z: number; rotation: number; animation: string; roomId?: string; color: string; hp: number };
-const players: Record<string, PlayerState> = {};
-const roomBalls: Record<string, {id: string, x: number, z: number}[]> = {};
-
-// Milk game types/state
 type MilkRoom = {
   id: string;
   host: string;
-  players: string[]; // socket IDs
+  players: string[];
   started: boolean;
   turnIndex: number;
 };
@@ -34,10 +28,7 @@ const milkRooms: Record<string, MilkRoom> = {};
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
-  // --- Milk Game Events ---
-
   socket.on('milkCreateRoom', () => {
-    // Generate 5 digit room code
     const roomId = Math.floor(10000 + Math.random() * 90000).toString();
     milkRooms[roomId] = {
       id: roomId,
@@ -74,9 +65,8 @@ io.on('connection', (socket) => {
 
   socket.on('milkAction', (data: { roomId: string, action: string }) => {
     const room = milkRooms[data.roomId];
-    // Broadcast squeeze actions to everyone except sender
     if (room && room.players[room.turnIndex] === socket.id) {
-      socket.to(data.roomId).emit('milkAction', data.action); // 'startSqueeze' or 'stopSqueeze'
+      socket.to(data.roomId).emit('milkAction', data.action);
     }
   });
 
@@ -92,16 +82,8 @@ io.on('connection', (socket) => {
       }
     }
   });
-
-  // --- End Milk Game Events ---
-
-  socket.on('joinRoom', (roomId: string) => {
-    // ... existing logic
-  });
-  
-  // (Assuming we keep the rest of the existing code intact below for brevity, but I will rewrite it all)
 });
 
 server.listen(PORT, () => {
-  console.log(\Server is running on port \\);
+  console.log('Server is running on port ' + PORT);
 });
