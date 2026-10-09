@@ -22,33 +22,37 @@ type MilkRoom = {
   players: string[];
   started: boolean;
   turnIndex: number;
+  names: Record<string, string>;
 };
 const milkRooms: Record<string, MilkRoom> = {};
 
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
-  socket.on('milkCreateRoom', () => {
+  socket.on('milkCreateRoom', (playerName: string) => {
     const roomId = Math.floor(10000 + Math.random() * 90000).toString();
     milkRooms[roomId] = {
       id: roomId,
       host: socket.id,
       players: [socket.id],
       started: false,
-      turnIndex: 0
+      turnIndex: 0,
+      names: { [socket.id]: playerName || 'Host' }
     };
     socket.join(roomId);
     socket.emit('milkRoomCreated', roomId);
-    socket.emit('milkPlayersUpdate', milkRooms[roomId].players);
+    socket.emit('milkPlayersUpdate', { players: milkRooms[roomId].players, names: milkRooms[roomId].names });
   });
 
-  socket.on('milkJoinRoom', (roomId: string) => {
+  socket.on('milkJoinRoom', (data: { roomId: string, name: string }) => {
+    const roomId = data.roomId;
     const room = milkRooms[roomId];
     if (room && !room.started && room.players.length < 5) {
       room.players.push(socket.id);
+      room.names[socket.id] = data.name || 'Player';
       socket.join(roomId);
       socket.emit('milkJoined', roomId);
-      io.to(roomId).emit('milkPlayersUpdate', room.players);
+      io.to(roomId).emit('milkPlayersUpdate', { players: room.players, names: room.names });
     } else {
       socket.emit('milkError', 'Room not found, full, or already started.');
     }
